@@ -22,6 +22,7 @@ import InputAdornment from "@material-ui/core/InputAdornment";
 
 import DeleteOutlineIcon from "@material-ui/icons/DeleteOutline";
 import EditIcon from "@material-ui/icons/Edit";
+import VisibilityIcon from "@material-ui/icons/Visibility";
 import MainContainer from "../../components/MainContainer";
 import MainHeader from "../../components/MainHeader";
 import MainHeaderButtonsWrapper from "../../components/MainHeaderButtonsWrapper";
@@ -32,6 +33,7 @@ import { i18n } from "../../translate/i18n";
 import TableRowSkeleton from "../../components/TableRowSkeleton";
 import TagModal from "../../components/TagModal";
 import ConfirmationModal from "../../components/ConfirmationModal";
+import TagTicketsModal from "../../components/TagTicketsModal";
 import toastError from "../../errors/toastError";
 import { Chip } from "@material-ui/core";
 import { Tooltip } from "@material-ui/core";
@@ -105,6 +107,25 @@ const Tags = () => {
   const [searchParam, setSearchParam] = useState("");
   const [tags, dispatch] = useReducer(reducer, []);
   const [tagModalOpen, setTagModalOpen] = useState(false);
+
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [tagTickets, setTagTickets] = useState([]);
+  const [loadingTickets, setLoadingTickets] = useState(false);
+  const [currentTag, setCurrentTag] = useState(null);
+
+  const handleViewTagTickets = async (tag) => {
+    try {
+      setLoadingTickets(true);
+      setCurrentTag(tag);
+      const { data } = await api.get('/tickets');
+      setTagTickets(data.tickets);
+      setViewModalOpen(true);
+    } catch (err) {
+      toastError(err);
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
 
   const fetchTags = useCallback(async () => {
     try {
@@ -216,6 +237,13 @@ return (
         aria-labelledby="form-dialog-title"
         tagId={selectedTag && selectedTag.id}
       />
+      <TagTicketsModal
+        open={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        tickets={tagTickets}
+        loading={loadingTickets}
+        currentTag={currentTag}
+      />
       <MainHeader>
         <Title>{i18n.t("tags.title")}</Title>
         <MainHeaderButtonsWrapper>
@@ -276,6 +304,12 @@ return (
                   </TableCell>
                   <TableCell align="center">{tag.ticketsCount}</TableCell>
                   <TableCell align="center">
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleViewTagTickets(tag)}
+                    >
+                      <VisibilityIcon />
+                    </IconButton>
                     <IconButton size="small" onClick={() => handleEditTag(tag)}>
                       <EditIcon />
                     </IconButton>

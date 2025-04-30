@@ -179,7 +179,7 @@ const ContactModal = ({ open, onClose, contactId, initialValues, onSave }) => {
 										name="email"
 										error={touched.email && Boolean(errors.email)}
 										helperText={touched.email && errors.email}
-										placeholder="Email address"
+										placeholder="E-mail"
 										fullWidth
 										margin="dense"
 										variant="outlined"

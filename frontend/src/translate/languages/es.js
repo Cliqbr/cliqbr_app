@@ -15,6 +15,7 @@ const messages = {
         buttons: {
           submit: "Registrarse",
           login: "¿Ya tienes una cuenta? ¡Inicia sesión!",
+          forgetpsw: "Olvidé mi contraseña",
         },
       },
       login: {

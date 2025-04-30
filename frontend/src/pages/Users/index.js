@@ -185,6 +185,8 @@ const Users = () => {
     }
   };
 
+  const currentUserId = parseInt(localStorage.getItem("userId"), 10);
+
   return (
     <MainContainer>
       <ConfirmationModal
@@ -269,7 +271,7 @@ const Users = () => {
                     >
                       <EditIcon />
                     </IconButton>
-
+                    {user.id !== currentUserId && (
                     <IconButton
                       size="small"
                       onClick={(e) => {
@@ -279,6 +281,7 @@ const Users = () => {
                     >
                       <DeleteOutlineIcon />
                     </IconButton>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

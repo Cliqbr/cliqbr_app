@@ -146,15 +146,25 @@ const Login = () => {
 					{ <Grid container>
 						<Grid item>
 							<Link
-								href="#"
-								variant="body2"
-								component={RouterLink}
-								to="/signup"
-							>
+                                href="https://cliqbr.com/home/pagina-de-cadastro/"
+                                variant="body2"
+                            >
 								{i18n.t("login.buttons.register")}
 							</Link>
 						</Grid>
 					</Grid> }
+					<Grid container>
+						<Grid item>
+							<Link
+								href="#"
+								variant="body2"
+								component={RouterLink}
+								to="/forgetpsw"
+							>
+								{i18n.t("login.buttons.forgetpsw")}
+							</Link>
+						</Grid>
+					</Grid>
 				</form>
 			
 			</div>

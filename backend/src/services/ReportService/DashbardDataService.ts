@@ -13,6 +13,7 @@ export interface Params {
   days?: number;
   date_from?: string;
   date_to?: string;
+  user_id?: number;
 }
 
 export default async function DashboardDataService(
@@ -57,14 +58,20 @@ export default async function DashboardDataService(
         (select avg("supportTime") from traking where "supportTime" > 0) "avgSupportTime",
         (select avg("waitTime") from traking where "waitTime" > 0) "avgWaitTime",
         (
-          select count(distinct "id")
-          from "Tickets"
-          where status like 'open' and "companyId" = ?
+          select count(distinct t.id)
+          from "Tickets" t
+          join "TicketTraking" tt on tt."ticketId" = t.id
+          where t.status like 'open' 
+            and t."companyId" = ?
+            and (? is null or tt."userId" = ?)
         ) "supportHappening",
         (
-          select count(distinct "id")
-          from "Tickets"
-          where status like 'pending' and "companyId" = ?
+          select count(distinct t.id)
+          from "Tickets" t
+          join "TicketTraking" tt on tt."ticketId" = t.id
+          where t.status like 'pending' 
+            and t."companyId" = ?
+            and (? is null or tt."userId" = ?)
         ) "supportPending",
         (select count(id) from traking where finished) "supportFinished",
         (
@@ -102,7 +109,7 @@ export default async function DashboardDataService(
         left join "UserRatings" ur on ur."userId" = t."userId" and ur."createdAt"::date = t."finishedAt"::date
         group by 1, 2
       ) att on att.id = u.id
-      where u."companyId" = ?
+      where u."companyId" = ? and (? is null or u.id = ?)
       order by att.name
     )
     select
@@ -128,9 +135,14 @@ export default async function DashboardDataService(
     replacements.push(`${params.date_to} 23:59:59`);
   }
 
-  replacements.push(companyId);
-  replacements.push(companyId);
-  replacements.push(companyId);
+  if (_.has(params, "user_id")) {
+    where += ` and tt."userId" is not distinct from ?`;
+    replacements.push(params.user_id);
+  }
+
+  replacements.push(companyId, params.user_id || null, params.user_id || null);
+  replacements.push(companyId, params.user_id || null, params.user_id || null);
+  replacements.push(companyId, params.user_id || null, params.user_id || null);
 
   const finalQuery = query.replace("-- filterPeriod", where);
 

@@ -232,8 +232,10 @@ const Dashboard = () => {
   const [filterType, setFilterType] = useState(1);
   const [dateFrom, setDateFrom] = useState(moment("1", "D").format("YYYY-MM-DD"));
   const [dateTo, setDateTo] = useState(moment().format("YYYY-MM-DD"));
+  const [userId, setUserId] = useState(null);
   const [loading, setLoading] = useState(false);
   const { find } = useDashboard();
+  const { users } = useUsers();
 
   let newDate = new Date();
   let date = newDate.getDate();
@@ -300,6 +302,13 @@ const Dashboard = () => {
       };
     }
 
+    if (userId) {
+      params = {
+        ...params,
+        user_id: userId,
+      };
+    }
+
     if (Object.keys(params).length === 0) {
       toast.error("Parametrize o filtro");
       setLoading(false);
@@ -346,7 +355,11 @@ const Dashboard = () => {
     return count;
   };
   
-    function renderFilters() {
+  async function handleChangeUser(value) {
+    setUserId(value);
+  }
+
+  function renderFilters() {
     if (filterType === 1) {
       return (
         <>
@@ -374,10 +387,29 @@ const Dashboard = () => {
               }}
             />
           </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl className={classes.selectContainer}>
+              <InputLabel id="user-selector-label">Filtrar por Atendente</InputLabel>
+              <Select
+                labelId="user-selector-label"
+                id="user-selector"
+                value={userId || ''}
+                onChange={(e) => handleChangeUser(e.target.value)}
+              >
+                <MenuItem value="">Todos os atendentes</MenuItem>
+                {users.map((user) => (
+                  <MenuItem key={user.id} value={user.id}>
+                    {user.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
         </>
       );
     } else {
       return (
+        <>
         <Grid item xs={12} sm={6} md={4}>
           <FormControl className={classes.selectContainer}>
             <InputLabel id="period-selector-label">Período</InputLabel>
@@ -398,6 +430,25 @@ const Dashboard = () => {
             <FormHelperText>Selecione o período desejado</FormHelperText>
           </FormControl>
         </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <FormControl className={classes.selectContainer}>
+            <InputLabel id="user-selector-label">Filtrar por Atendente</InputLabel>
+            <Select
+              labelId="user-selector-label"
+              id="user-selector"
+              value={userId || ''}
+              onChange={(e) => handleChangeUser(e.target.value)}
+            >
+              <MenuItem value="">Todos os atendentes</MenuItem>
+              {users.map((user) => (
+                <MenuItem key={user.id} value={user.id}>
+                  {user.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        </>
       );
     }
   }

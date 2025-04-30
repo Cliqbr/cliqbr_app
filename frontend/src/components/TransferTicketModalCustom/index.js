@@ -38,6 +38,7 @@ const filterOptions = createFilterOptions({
 const TransferTicketModalCustom = ({ modalOpen, onClose, ticketid }) => {
   const history = useHistory();
   const [options, setOptions] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [queues, setQueues] = useState([]);
   const [allQueues, setAllQueues] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -95,6 +96,7 @@ const TransferTicketModalCustom = ({ modalOpen, onClose, ticketid }) => {
   useEffect(() => {
     if (!modalOpen || searchParam.length < 3) {
       setLoading(false);
+      setOptions([]);
       return;
     }
     const delayDebounceFn = setTimeout(() => {
@@ -104,7 +106,13 @@ const TransferTicketModalCustom = ({ modalOpen, onClose, ticketid }) => {
           const { data } = await api.get("/users/", {
             params: { searchParam },
           });
-          setOptions(data.users);
+          setAllUsers(data.users);
+          const filtered = selectedQueue 
+            ? data.users.filter(user => 
+                user.queues.some(queue => queue.id === selectedQueue)
+              )
+            : data.users;
+          setOptions(filtered);
           setLoading(false);
         } catch (err) {
           setLoading(false);
@@ -115,7 +123,23 @@ const TransferTicketModalCustom = ({ modalOpen, onClose, ticketid }) => {
       fetchUsers();
     }, 500);
     return () => clearTimeout(delayDebounceFn);
-  }, [searchParam, modalOpen]);
+  }, [searchParam, modalOpen, selectedQueue]);
+
+  useEffect(() => {
+    if (selectedQueue && allUsers.length > 0) {
+      const filtered = allUsers.filter(user =>
+        user.queues.some(queue => queue.id === selectedQueue)
+      );
+      setOptions(filtered);
+    } else {
+      setOptions(allUsers);
+    }
+  }, [selectedQueue, allUsers]);
+  
+  const handleQueueChange = (e) => {
+    setSelectedUser(null);
+    setSelectedQueue(e.target.value);
+  };
 
   const handleClose = () => {
     onClose();
@@ -163,17 +187,28 @@ const TransferTicketModalCustom = ({ modalOpen, onClose, ticketid }) => {
           {i18n.t("transferTicketModal.title")}
         </DialogTitle>
         <DialogContent dividers>
+          <FormControl variant="outlined" className={classes.maxWidth} style={{ marginBottom: user.profile === 'admin' ? 20 : 0 }}>
+            <InputLabel>
+              {i18n.t("transferTicketModal.fieldQueueLabel")}
+            </InputLabel>
+            <Select
+              value={selectedQueue}
+              onChange={handleQueueChange}
+              label={i18n.t("transferTicketModal.fieldQueuePlaceholder")}
+            >
+              {queues.map((queue) => (
+                <MenuItem key={queue.id} value={queue.id}>
+                  {queue.name}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {user.profile === 'admin' && (
           <Autocomplete
             style={{ width: 300, marginBottom: 20 }}
             getOptionLabel={(option) => `${option.name}`}
             onChange={(e, newValue) => {
               setSelectedUser(newValue);
-              if (newValue != null && Array.isArray(newValue.queues)) {
-                setQueues(newValue.queues);
-              } else {
-                setQueues(allQueues);
-                setSelectedQueue("");
-              }
             }}
             options={options}
             filterOptions={filterOptions}
@@ -202,22 +237,7 @@ const TransferTicketModalCustom = ({ modalOpen, onClose, ticketid }) => {
               />
             )}
           />
-          <FormControl variant="outlined" className={classes.maxWidth}>
-            <InputLabel>
-              {i18n.t("transferTicketModal.fieldQueueLabel")}
-            </InputLabel>
-            <Select
-              value={selectedQueue}
-              onChange={(e) => setSelectedQueue(e.target.value)}
-              label={i18n.t("transferTicketModal.fieldQueuePlaceholder")}
-            >
-              {queues.map((queue) => (
-                <MenuItem key={queue.id} value={queue.id}>
-                  {queue.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          )}
           {/* CONEXAO */}
           <Grid container spacing={2} style={{marginTop: '15px'}}>
             <Grid xs={12} item>

@@ -315,7 +315,7 @@ export function CompanyForm(props) {
                     {/*<MenuItem value="BIMESTRAL">Bimestral</MenuItem>*/}
                     {/*<MenuItem value="TRIMESTRAL">Trimestral</MenuItem>*/}
                     {/*<MenuItem value="SEMESTRAL">Semestral</MenuItem>*/}
-                    {/*<MenuItem value="ANUAL">Anual</MenuItem>*/}
+                    <MenuItem value="ANUAL">Anual</MenuItem>
                   </Field>
                 </FormControl>
               </Grid>

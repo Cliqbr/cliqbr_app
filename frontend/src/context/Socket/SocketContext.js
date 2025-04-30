@@ -9,56 +9,72 @@ class ManagedSocket {
     this.callbacks = [];
     this.joins = [];
 
-    this.rawSocket.on("connect", () => {
-      if (!this.rawSocket.recovered) {
-        const refreshJoinsOnReady = () => {
-          for (const j of this.joins) {
-            console.debug("refreshing join", j);
-            this.rawSocket.emit(`join${j.event}`, ...j.params);
+    if (this.rawSocket) {
+      this.rawSocket.on("connect", () => {
+        if (!this.rawSocket.recovered) {
+          const refreshJoinsOnReady = () => {
+            for (const j of this.joins) {
+              if (this.rawSocket) {
+                console.debug("refreshing join", j);
+                this.rawSocket.emit(`join${j.event}`, ...j.params);
+              }
+            }
+            this.rawSocket.off("ready", refreshJoinsOnReady);
+          };
+          for (const j of this.callbacks) {
+            this.rawSocket.off(j.event, j.callback);
+            this.rawSocket.on(j.event, j.callback);
           }
-          this.rawSocket.off("ready", refreshJoinsOnReady);
-        };
-        for (const j of this.callbacks) {
-          this.rawSocket.off(j.event, j.callback);
-          this.rawSocket.on(j.event, j.callback);
+          this.rawSocket.on("ready", refreshJoinsOnReady);
         }
-        
-        this.rawSocket.on("ready", refreshJoinsOnReady);
-      }
-    });
+      });
+    }
   }
-  
+
   on(event, callback) {
     if (event === "ready" || event === "connect") {
       return this.socketManager.onReady(callback);
     }
-    this.callbacks.push({event, callback});
-    return this.rawSocket.on(event, callback);
+    this.callbacks.push({ event, callback });
+    if (this.rawSocket) {
+      this.rawSocket.on(event, callback);
+    }
+    return this;
   }
-  
+
   off(event, callback) {
     const i = this.callbacks.findIndex((c) => c.event === event && c.callback === callback);
-    this.callbacks.splice(i, 1);
-    return this.rawSocket.off(event, callback);
+    if (i !== -1) {
+      this.callbacks.splice(i, 1);
+    }
+    if (this.rawSocket) {
+      this.rawSocket.off(event, callback);
+    }
+    return this;
   }
-  
+
   emit(event, ...params) {
     if (event.startsWith("join")) {
       this.joins.push({ event: event.substring(4), params });
-      console.log("Joining", { event: event.substring(4), params});
+      console.log("Joining", { event: event.substring(4), params });
     }
-    return this.rawSocket.emit(event, ...params);
+    if (this.rawSocket) {
+      this.rawSocket.emit(event, ...params);
+    }
+    return this;
   }
-  
+
   disconnect() {
-    for (const j of this.joins) {
-      this.rawSocket.emit(`leave${j.event}`, ...j.params);
+    if (this.rawSocket) {
+      for (const j of this.joins) {
+        this.rawSocket.emit(`leave${j.event}`, ...j.params);
+      }
+      this.joins = [];
+      for (const c of this.callbacks) {
+        this.rawSocket.off(c.event, c.callback);
+      }
+      this.callbacks = [];
     }
-    this.joins = [];
-    for (const c of this.callbacks) {
-      this.rawSocket.off(c.event, c.callback);
-    }
-    this.callbacks = [];
   }
 }
 
@@ -97,7 +113,12 @@ const SocketManager = {
         this.currentSocket = null;
       }
 
-      let token = JSON.parse(localStorage.getItem("token"));
+      let token = localStorage.getItem("token");
+      if (!token) {
+        console.error("Token not found");
+        return new DummySocket();
+      }
+      token = JSON.parse(token);
       const { exp } = jwt.decode(token);
 
       if ( Date.now() >= exp*1000) {
@@ -110,10 +131,6 @@ const SocketManager = {
 
       this.currentCompanyId = companyId;
       this.currentUserId = userId;
-      
-      if (!token) {
-        return new DummySocket();
-      }
       
       this.currentSocket = openSocket(process.env.REACT_APP_BACKEND_URL, {
         transports: ["websocket"],

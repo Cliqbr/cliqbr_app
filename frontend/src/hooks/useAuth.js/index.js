@@ -77,20 +77,23 @@ const useAuth = () => {
   useEffect(() => {
     const companyId = localStorage.getItem("companyId");
     if (companyId) {
-   
       const socket = socketManager.getSocket(companyId);
-
-      socket.on(`company-${companyId}-user`, (data) => {
-        if (data.action === "update" && data.user.id === user.id) {
-          setUser(data.user);
-        }
-      });
-    
-    
-    return () => {
-      socket.disconnect();
-    };
-  }
+      
+      if (socket && socket.rawSocket) {
+        const handleUserUpdate = (data) => {
+          if (data.action === "update" && data.user.id === user.id) {
+            setUser(data.user);
+          }
+        };
+        
+        socket.on(`company-${companyId}-user`, handleUserUpdate);
+        
+        return () => {
+          socket.off(`company-${companyId}-user`, handleUserUpdate);
+          socket.disconnect();
+        };
+      }
+    }
   }, [socketManager, user]);
 
   const handleLogin = async (userData) => {
